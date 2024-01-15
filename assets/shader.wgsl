@@ -7,6 +7,7 @@ struct VertexInput {
 
 struct InstanceInput {
     @location(2) instance_pos: vec3<f32>,
+    @location(3) theta: f32,
 }
 
 struct VertexOutput {
@@ -21,8 +22,15 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
-    out.clip_position = vec4<f32>(model.position + instance.instance_pos, 1.0);
-    // out.clip_position = vec4<f32>(model.position, 1.0);
+
+    let rotation_matrix = mat2x2<f32>(
+        cos(instance.theta), -sin(instance.theta),
+        sin(instance.theta),  cos(instance.theta)
+    );
+
+    let rotated_position = rotation_matrix * model.position.xy;
+    out.clip_position = vec4<f32>(vec3<f32>(rotated_position, model.position.z) + instance.instance_pos, 1.0);
+
     return out;
 }
 

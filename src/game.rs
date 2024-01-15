@@ -1,7 +1,7 @@
 use crate::constants::{
     ENEMY_BUFFER, ENEMY_SPAWN_FREQ, ENEMY_SPEED, GATE_SPAWN_FREQ, PLAYER_SPEED,
 };
-use crate::game_object::{Enemy, Player};
+use crate::game_object::{Enemy, Gate, Player};
 
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
@@ -23,6 +23,7 @@ pub struct Game {
 
     pub player: Player,
     pub enemies: Vec<Enemy>,
+    pub gates: Vec<Gate>,
 }
 
 impl Game {
@@ -36,6 +37,7 @@ impl Game {
             enemies_per_wave: 1,
             player: Player::new(),
             enemies: Vec::new(),
+            gates: Vec::new(),
         }
     }
 
@@ -63,19 +65,35 @@ impl Game {
                 }
             }
 
+            #[cfg(target_arch = "wasm32")]
+            let sv = rescale((dx, dy), PLAYER_SPEED * 0.5);
+            #[cfg(not(target_arch = "wasm32"))]
             let sv = rescale((dx, dy), PLAYER_SPEED);
+
             self.player.game_object.coords.0 += sv.0;
             self.player.game_object.coords.1 += sv.1;
 
+            // nmove enemies
             for enemy in self.enemies.iter_mut() {
                 let (dx, dy) = (
                     self.player.game_object.coords.0 - enemy.game_object.coords.0,
                     self.player.game_object.coords.1 - enemy.game_object.coords.1,
                 );
 
+                #[cfg(target_arch = "wasm32")]
+                let sv = rescale((dx, dy), ENEMY_SPEED * 0.5);
+                #[cfg(not(target_arch = "wasm32"))]
                 let sv = rescale((dx, dy), ENEMY_SPEED);
                 enemy.game_object.coords.0 += sv.0;
                 enemy.game_object.coords.1 += sv.1;
+            }
+
+            // move gates
+            for gate in self.gates.iter_mut() {
+                gate.rotation += dt * gate.spin_speed;
+
+                println!("dt={}, gate.spin_speed={}", dt, gate.spin_speed);
+                println!("gate rot: {}", gate.rotation);
             }
 
             self.timer += dt;
@@ -100,10 +118,10 @@ impl Game {
         let mut rng = thread_rng();
 
         let quadrant = rng.gen_range(1..5);
-        let mut x_min = 0f32;
-        let mut x_max = 0f32;
-        let mut y_min = 0f32;
-        let mut y_max = 0f32;
+        let x_min;
+        let x_max;
+        let y_min;
+        let y_max;
 
         match quadrant {
             1 => {
@@ -143,6 +161,12 @@ impl Game {
     }
 
     fn spawn_gate(&mut self) {
+        let mut rng = thread_rng();
+
+        let x = rng.gen_range(0.0..1.0);
+        let y = rng.gen_range(0.0..1.0);
+        self.gates.push(Gate::new((x, y)));
+
         self.last_gate_time = self.timer;
     }
 }

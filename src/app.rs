@@ -1,5 +1,5 @@
 use crate::game::Game;
-use crate::game_object::{Enemy, Player};
+use crate::game_object::{Enemy, Gate, Player};
 use crate::sprite::{Instance, Sprite, Vertex};
 use crate::texture::Texture;
 
@@ -124,6 +124,7 @@ impl App {
         let atlas_bytes = vec![
             include_bytes!("../assets/circle.png").as_ref(),
             include_bytes!("../assets/diamond.png").as_ref(),
+            include_bytes!("../assets/triangle.png").as_ref(),
         ];
         let texture_atlas =
             Texture::create_atlas(&device, &queue, atlas_bytes, Some("atlas")).unwrap();
@@ -341,7 +342,7 @@ impl App {
             let mut base_vertex_offset = 0i32;
             let mut instance_count = 0u32;
 
-            let vertices = Player::get_vertices(aspect_ratio);
+            let vertices = Player::get_vertices(aspect_ratio, None);
             let indices = Player::get_indices();
             let instance = self.game.player.get_instance(aspect_ratio);
 
@@ -369,7 +370,7 @@ impl App {
             base_vertex_offset += vertices.len() as i32;
             instance_count += 1;
 
-            let vertices = Enemy::get_vertices(aspect_ratio);
+            let vertices = Enemy::get_vertices(aspect_ratio, None);
             let indices = Enemy::get_indices();
             let mut instances: Vec<Instance> = Vec::new();
             for enemy in &self.game.enemies {
@@ -394,13 +395,57 @@ impl App {
 
             vertex_offset += std::mem::size_of::<Vertex>() as u64 * vertices.len() as u64;
             index_offset += std::mem::size_of::<u16>() as u64 * indices.len() as u64;
-            instance_offset += std::mem::size_of::<Instance> as u64 * instances.len() as u64;
+            instance_offset += std::mem::size_of::<Instance>() as u64 * instances.len() as u64;
 
             render_pass.draw_indexed(
                 0..indices.len() as u32,
                 base_vertex_offset,
                 instance_count..(instance_count + instances.len() as u32),
-            )
+            );
+            base_vertex_offset += vertices.len() as i32;
+            instance_count += instances.len() as u32;
+
+            let vertices = self
+                .game
+                .gates
+                .iter()
+                .flat_map(|gate| Gate::get_vertices(aspect_ratio, None))
+                .collect::<Vec<_>>();
+            let indices = Gate::get_indices();
+            let instances = self
+                .game
+                .gates
+                .iter()
+                .map(|gate| gate.get_instance(aspect_ratio))
+                .collect::<Vec<_>>();
+
+            self.queue.write_buffer(
+                &self.vertex_buffer,
+                vertex_offset,
+                bytemuck::cast_slice(&vertices),
+            );
+            self.queue.write_buffer(
+                &self.index_buffer,
+                index_offset,
+                bytemuck::cast_slice(&indices),
+            );
+            self.queue.write_buffer(
+                &self.instance_buffer,
+                instance_offset,
+                bytemuck::cast_slice(&instances),
+            );
+
+            vertex_offset += std::mem::size_of::<Vertex>() as u64 * vertices.len() as u64;
+            index_offset += std::mem::size_of::<u16>() as u64 * indices.len() as u64;
+            instance_offset += std::mem::size_of::<Instance>() as u64 * instances.len() as u64;
+
+            render_pass.draw_indexed(
+                0..indices.len() as u32,
+                base_vertex_offset,
+                instance_count..(instance_count + instances.len() as u32),
+            );
+            base_vertex_offset += vertices.len() as i32;
+            instance_count += instances.len() as u32;
         }
 
         self.queue.submit(iter::once(encoder.finish()));
