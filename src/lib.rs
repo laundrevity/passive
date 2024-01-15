@@ -1,8 +1,16 @@
 mod app;
 mod constants;
 mod game;
+mod sprite;
+mod texture;
+mod utils;
 
 use constants::{WINDOW_HEIGHT, WINDOW_WIDTH};
+use utils::get_time;
+use app::App;
+
+#[cfg(target_arch = "wasm32")]
+use utils::device_pixel_ratio;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -13,19 +21,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::app::App;
 
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = window)]
-    fn getDevicePixelRatio() -> f64;
-}
-
-#[cfg(target_arch = "wasm32")]
-fn device_pixel_ratio() -> f64 {
-    getDevicePixelRatio()
-}
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub async fn run() {
@@ -70,6 +66,8 @@ pub async fn run() {
     }
 
     let mut app = App::new(window).await;
+    let mut last_frame = get_time();
+    let mut dt = 0f32;
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
@@ -92,7 +90,21 @@ pub async fn run() {
                     _ => {}
                 }
             }
+        },
+        
+        Event::RedrawRequested(window_id) if window_id == app.window().id() => {
+            let current_frame = get_time();
+            dt = current_frame - last_frame;
+            last_frame = current_frame;
+
+            app.update(dt);
         }
+        
+        Event::MainEventsCleared => {
+            // RedrawRequested will only trigger once, unless we manually request it
+            app.window().request_redraw();
+        }
+        
         _ => {}
     });
 }

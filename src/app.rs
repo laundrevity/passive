@@ -1,3 +1,5 @@
+use crate::game::Game;
+
 use std::collections::HashSet;
 use winit::{
     event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -5,6 +7,7 @@ use winit::{
 };
 
 pub struct App {
+    game: Game,
     surface: wgpu::Surface,
     device: wgpu::Device,
     config: wgpu::SurfaceConfiguration,
@@ -15,6 +18,8 @@ pub struct App {
 
 impl App {
     pub async fn new(window: Window) -> Self {
+        let game = Game{};
+
         let size = window.inner_size();
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
@@ -82,6 +87,7 @@ impl App {
         surface.configure(&device, &config);
 
         Self {
+            game,
             surface,
             device,
             config,
@@ -127,5 +133,9 @@ impl App {
             }
             _ => false,
         }
+    }
+
+    pub fn update(&mut self, dt: f32) {
+        println!("dt: {}", dt);
     }
 }
