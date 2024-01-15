@@ -5,7 +5,13 @@ use crate::game_object::{Enemy, Player};
 
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
+use std::f32::EPSILON;
 use winit::event::VirtualKeyCode;
+
+fn rescale(v: (f32, f32), speed: f32) -> (f32, f32) {
+    let d = (v.0 * v.0 + v.1 * v.1).sqrt();
+    (v.0 * speed / (d + EPSILON), v.1 * speed / (d + EPSILON))
+}
 
 pub struct Game {
     paused: bool,
@@ -36,14 +42,40 @@ impl Game {
     pub fn update(&mut self, dt: f32) {
         if !self.paused {
             // move player
+            let mut dx = 0f32;
+            let mut dy = 0f32;
+
             for key in self.keys.iter() {
                 match key {
-                    VirtualKeyCode::W => self.player.game_object.coords.1 += PLAYER_SPEED,
-                    VirtualKeyCode::A => self.player.game_object.coords.0 -= PLAYER_SPEED,
-                    VirtualKeyCode::S => self.player.game_object.coords.1 -= PLAYER_SPEED,
-                    VirtualKeyCode::D => self.player.game_object.coords.0 += PLAYER_SPEED,
+                    VirtualKeyCode::W => {
+                        dy += 1.0;
+                    }
+                    VirtualKeyCode::A => {
+                        dx -= 1.0;
+                    }
+                    VirtualKeyCode::S => {
+                        dy -= 1.0;
+                    }
+                    VirtualKeyCode::D => {
+                        dx += 1.0;
+                    }
                     _ => {}
                 }
+            }
+
+            let sv = rescale((dx, dy), PLAYER_SPEED);
+            self.player.game_object.coords.0 += sv.0;
+            self.player.game_object.coords.1 += sv.1;
+
+            for enemy in self.enemies.iter_mut() {
+                let (dx, dy) = (
+                    self.player.game_object.coords.0 - enemy.game_object.coords.0,
+                    self.player.game_object.coords.1 - enemy.game_object.coords.1,
+                );
+
+                let sv = rescale((dx, dy), ENEMY_SPEED);
+                enemy.game_object.coords.0 += sv.0;
+                enemy.game_object.coords.1 += sv.1;
             }
 
             self.timer += dt;
@@ -106,6 +138,7 @@ impl Game {
             self.enemies.push(Enemy::new((x, y)));
         }
 
+        self.enemies_per_wave += 1;
         self.last_enemy_time = self.timer;
     }
 
