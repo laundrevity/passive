@@ -1,6 +1,7 @@
 mod app;
 mod constants;
 mod game;
+mod game_object;
 mod sprite;
 mod texture;
 mod utils;

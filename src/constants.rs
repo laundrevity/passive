@@ -9,3 +9,6 @@ pub const PLAYER_SPEED: f32 = 0.01;
 pub const ENEMY_SPEED: f32 = 0.7 * PLAYER_SPEED;
 
 pub const PLAYER_RADIUS: f32 = 0.05;
+pub const ENEMY_RADIUS: f32 = 0.05;
+
+pub const NUM_TEXTURES: usize = 2;

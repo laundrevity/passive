@@ -1,7 +1,9 @@
-use crate::game::{Game, Player};
+use crate::game::Game;
+use crate::game_object::{Enemy, Player};
 use crate::sprite::{Instance, Sprite, Vertex};
 use crate::texture::Texture;
 
+use rand::seq::index;
 use std::iter;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -334,21 +336,72 @@ impl App {
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
+            let mut vertex_offset = 0u64;
+            let mut index_offset = 0u64;
+            let mut instance_offset = 0u64;
+            let mut base_vertex_offset = 0i32;
+            let mut instance_count = 0u32;
+
             let vertices = Player::get_vertices(aspect_ratio);
             let indices = Player::get_indices();
             let instance = self.game.player.get_instance(aspect_ratio);
 
-            self.queue
-                .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
-            self.queue
-                .write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(&indices));
+            self.queue.write_buffer(
+                &self.vertex_buffer,
+                vertex_offset,
+                bytemuck::cast_slice(&vertices),
+            );
+            self.queue.write_buffer(
+                &self.index_buffer,
+                index_offset,
+                bytemuck::cast_slice(&indices),
+            );
             self.queue.write_buffer(
                 &self.instance_buffer,
-                0,
+                instance_offset,
                 bytemuck::cast_slice(&vec![instance]),
             );
 
-            render_pass.draw_indexed(0..indices.len() as u32, 0, 0..1);
+            vertex_offset += std::mem::size_of::<Vertex>() as u64 * vertices.len() as u64;
+            index_offset += std::mem::size_of::<u16>() as u64 * indices.len() as u64;
+            instance_offset += std::mem::size_of::<Instance>() as u64; // 1 instance
+
+            render_pass.draw_indexed(0..indices.len() as u32, base_vertex_offset, 0..1);
+            base_vertex_offset += vertices.len() as i32;
+            instance_count += 1;
+
+            let vertices = Enemy::get_vertices(aspect_ratio);
+            let indices = Enemy::get_indices();
+            let mut instances: Vec<Instance> = Vec::new();
+            for enemy in &self.game.enemies {
+                instances.push(enemy.get_instance(aspect_ratio));
+            }
+
+            self.queue.write_buffer(
+                &self.vertex_buffer,
+                vertex_offset,
+                bytemuck::cast_slice(&vertices),
+            );
+            self.queue.write_buffer(
+                &self.index_buffer,
+                index_offset,
+                bytemuck::cast_slice(&indices),
+            );
+            self.queue.write_buffer(
+                &self.instance_buffer,
+                instance_offset,
+                bytemuck::cast_slice(&instances),
+            );
+
+            vertex_offset += std::mem::size_of::<Vertex>() as u64 * vertices.len() as u64;
+            index_offset += std::mem::size_of::<u16>() as u64 * indices.len() as u64;
+            instance_offset += std::mem::size_of::<Instance> as u64 * instances.len() as u64;
+
+            render_pass.draw_indexed(
+                0..indices.len() as u32,
+                base_vertex_offset,
+                instance_count..(instance_count + instances.len() as u32),
+            )
         }
 
         self.queue.submit(iter::once(encoder.finish()));

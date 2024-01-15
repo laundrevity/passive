@@ -1,64 +1,11 @@
 use crate::constants::{
-    ENEMY_BUFFER, ENEMY_SPAWN_FREQ, ENEMY_SPEED, GATE_SPAWN_FREQ, PLAYER_RADIUS, PLAYER_SPEED,
+    ENEMY_BUFFER, ENEMY_SPAWN_FREQ, ENEMY_SPEED, GATE_SPAWN_FREQ, PLAYER_SPEED,
 };
-use crate::sprite::{Instance, Sprite, Vertex};
+use crate::game_object::{Enemy, Player};
 
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
 use winit::event::VirtualKeyCode;
-
-pub struct Player {
-    coords: (f32, f32),
-}
-
-impl Player {
-    pub fn new() -> Self {
-        Self { coords: (0.0, 0.0) }
-    }
-}
-
-impl Sprite for Player {
-    fn get_vertices(aspect_ratio: f32) -> Vec<Vertex> {
-        let s = 1f32 / aspect_ratio;
-        let r = PLAYER_RADIUS;
-        vec![
-            Vertex {
-                position: [s * -r, -r, 0.0],
-                tex_coords: [0.0, 1.0],
-            }, // A
-            Vertex {
-                position: [s * r, -r, 0.0],
-                tex_coords: [1.0, 1.0],
-                // tex_coords: [0.5, 1.0],
-            }, // B
-            Vertex {
-                position: [s * r, r, 0.0],
-                tex_coords: [1.0, 0.0],
-                // tex_coords: [0.5, 0.0],
-            }, // C
-            Vertex {
-                position: [s * -r, r, 0.0],
-                tex_coords: [0.0, 0.0],
-            }, // D
-        ]
-    }
-
-    fn get_indices() -> &'static [u16] {
-        &[0, 1, 2, 0, 2, 3]
-    }
-
-    fn get_instance(&self, aspect_ratio: f32) -> Instance {
-        let s = 1f32 / aspect_ratio;
-
-        Instance {
-            instance_pos: [s * self.coords.0, self.coords.1, 0.0],
-        }
-    }
-}
-
-struct Enemy {
-    coords: (f32, f32),
-}
 
 pub struct Game {
     paused: bool,
@@ -91,10 +38,10 @@ impl Game {
             // move player
             for key in self.keys.iter() {
                 match key {
-                    VirtualKeyCode::W => self.player.coords.1 += PLAYER_SPEED,
-                    VirtualKeyCode::A => self.player.coords.0 -= PLAYER_SPEED,
-                    VirtualKeyCode::S => self.player.coords.1 -= PLAYER_SPEED,
-                    VirtualKeyCode::D => self.player.coords.0 += PLAYER_SPEED,
+                    VirtualKeyCode::W => self.player.game_object.coords.1 += PLAYER_SPEED,
+                    VirtualKeyCode::A => self.player.game_object.coords.0 -= PLAYER_SPEED,
+                    VirtualKeyCode::S => self.player.game_object.coords.1 -= PLAYER_SPEED,
+                    VirtualKeyCode::D => self.player.game_object.coords.0 += PLAYER_SPEED,
                     _ => {}
                 }
             }
@@ -156,7 +103,7 @@ impl Game {
         for _ in 0..self.enemies_per_wave {
             let x = rng.gen_range(x_min..x_max);
             let y = rng.gen_range(y_min..y_max);
-            self.enemies.push(Enemy { coords: (x, y) })
+            self.enemies.push(Enemy::new((x, y)));
         }
 
         self.last_enemy_time = self.timer;
