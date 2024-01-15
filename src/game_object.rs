@@ -1,9 +1,14 @@
-use crate::constants::{ENEMY_RADIUS, PLAYER_RADIUS};
+use crate::constants::{ENEMY_RADIUS, PLAYER_RADIUS, NUM_TEXTURES};
 use crate::sprite::{Instance, Sprite, Vertex};
+
+fn t(x: f32, texture_index: f32) -> f32 {
+    let x_min = texture_index / (NUM_TEXTURES as f32);
+    let x_max = (texture_index + 1f32) / (NUM_TEXTURES as f32);
+    x_min + x * (x_max - x_min)
+}
 
 pub struct GameObject {
     pub coords: (f32, f32),
-    pub texture_index: usize,
 }
 
 pub struct Player {
@@ -19,7 +24,6 @@ impl Player {
         Self {
             game_object: GameObject {
                 coords: (0.0, 0.0),
-                texture_index: 0,
             },
         }
     }
@@ -30,7 +34,6 @@ impl Enemy {
         Self {
             game_object: GameObject {
                 coords,
-                texture_index: 1,
             },
         }
     }
@@ -40,24 +43,27 @@ impl Sprite for Player {
     fn get_vertices(aspect_ratio: f32) -> Vec<Vertex> {
         let s = 1f32 / aspect_ratio;
         let r = PLAYER_RADIUS;
+        let i = 0f32;
+
+
         vec![
             Vertex {
                 position: [s * -r, -r, 0.0],
-                tex_coords: [0.0, 1.0],
+                tex_coords: [t(0.0, i), 1.0],
             }, // A
             Vertex {
                 position: [s * r, -r, 0.0],
-                tex_coords: [1.0, 1.0],
+                tex_coords: [t(1.0, i), 1.0],
                 // tex_coords: [0.5, 1.0],
             }, // B
             Vertex {
                 position: [s * r, r, 0.0],
-                tex_coords: [1.0, 0.0],
+                tex_coords: [t(1.0, i), 0.0],
                 // tex_coords: [0.5, 0.0],
             }, // C
             Vertex {
                 position: [s * -r, r, 0.0],
-                tex_coords: [0.0, 0.0],
+                tex_coords: [t(0.0, i), 0.0],
             }, // D
         ]
     }
@@ -91,22 +97,24 @@ impl Sprite for Enemy {
     fn get_vertices(aspect_ratio: f32) -> Vec<Vertex> {
         let s = 1f32 / aspect_ratio;
         let r = ENEMY_RADIUS;
+        let i = 1f32;
+
         vec![
             Vertex {
                 position: [-s * r, 0.0, 0.0],
-                tex_coords: [0.0, 0.5],
+                tex_coords: [t(0.0, i), 0.5],
             }, // A
             Vertex {
                 position: [0.0, -r, 0.0],
-                tex_coords: [0.5, 1.0],
+                tex_coords: [t(0.5, i), 1.0],
             }, // B
             Vertex {
                 position: [s * r, 0.0, 0.0],
-                tex_coords: [1.0, 0.5],
+                tex_coords: [t(1.0, i), 0.5],
             }, // C
             Vertex {
                 position: [0.0, r, 0.0],
-                tex_coords: [0.5, 0.0],
+                tex_coords: [t(0.5, i), 0.0],
             }, // D
         ]
     }

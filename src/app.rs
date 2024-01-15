@@ -3,7 +3,6 @@ use crate::game_object::{Enemy, Player};
 use crate::sprite::{Instance, Sprite, Vertex};
 use crate::texture::Texture;
 
-use rand::seq::index;
 use std::iter;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -124,7 +123,7 @@ impl App {
 
         let atlas_bytes = vec![
             include_bytes!("../assets/circle.png").as_ref(),
-            // include_bytes!("../assets/triangle.png").as_ref(),
+            include_bytes!("../assets/diamond.png").as_ref(),
         ];
         let texture_atlas =
             Texture::create_atlas(&device, &queue, atlas_bytes, Some("atlas")).unwrap();
