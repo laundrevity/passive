@@ -5,9 +5,9 @@ mod sprite;
 mod texture;
 mod utils;
 
+use app::App;
 use constants::{WINDOW_HEIGHT, WINDOW_WIDTH};
 use utils::get_time;
-use app::App;
 
 #[cfg(target_arch = "wasm32")]
 use utils::device_pixel_ratio;
@@ -20,8 +20,6 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-
-
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub async fn run() {
@@ -90,21 +88,34 @@ pub async fn run() {
                     _ => {}
                 }
             }
-        },
-        
+        }
+
         Event::RedrawRequested(window_id) if window_id == app.window().id() => {
             let current_frame = get_time();
             dt = current_frame - last_frame;
             last_frame = current_frame;
 
             app.update(dt);
+
+            match app.render() {
+                Ok(_) => {}
+                // Reconfigure the surface if it's lost or outdated
+                Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                    // state.resize(state.size)
+                    *control_flow = ControlFlow::Exit;
+                }
+                // The system is out of memory, we should probably quit
+                Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                // We're ignoring timeouts
+                Err(wgpu::SurfaceError::Timeout) => log::warn!("Surface timeout"),
+            }
         }
-        
+
         Event::MainEventsCleared => {
             // RedrawRequested will only trigger once, unless we manually request it
             app.window().request_redraw();
         }
-        
+
         _ => {}
     });
 }
