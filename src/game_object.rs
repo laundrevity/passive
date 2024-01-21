@@ -54,28 +54,27 @@ impl Gate {
 }
 
 impl Sprite for Player {
-    fn get_vertices(aspect_ratio: f32, _: Option<f32>) -> Vec<Vertex> {
-        let s = 1f32 / aspect_ratio;
+    fn get_vertices() -> Vec<Vertex> {
         let r = PLAYER_RADIUS;
         let i = 0f32;
 
         vec![
             Vertex {
-                position: [s * -r, -r, 0.0],
+                position: [-r, -r, 0.0],
                 tex_coords: [t(0.0, i), 1.0],
             }, // A
             Vertex {
-                position: [s * r, -r, 0.0],
+                position: [r, -r, 0.0],
                 tex_coords: [t(1.0, i), 1.0],
                 // tex_coords: [0.5, 1.0],
             }, // B
             Vertex {
-                position: [s * r, r, 0.0],
+                position: [r, r, 0.0],
                 tex_coords: [t(1.0, i), 0.0],
                 // tex_coords: [0.5, 0.0],
             }, // C
             Vertex {
-                position: [s * -r, r, 0.0],
+                position: [-r, r, 0.0],
                 tex_coords: [t(0.0, i), 0.0],
             }, // D
         ]
@@ -85,15 +84,9 @@ impl Sprite for Player {
         &[0, 1, 2, 0, 2, 3]
     }
 
-    fn get_instance(&self, aspect_ratio: f32) -> Instance {
-        let s = 1f32 / aspect_ratio;
-
+    fn get_instance(&self) -> Instance {
         Instance {
-            instance_pos: [
-                s * self.game_object.coords.0,
-                self.game_object.coords.1,
-                0.0,
-            ],
+            instance_pos: [self.game_object.coords.0, self.game_object.coords.1, 0.0],
             theta: 0.0,
         }
     }
@@ -108,14 +101,13 @@ impl Sprite for Enemy {
     /// [0, 0]      [1, 0]
     ///
     /// [0, 1]      [1, 1]
-    fn get_vertices(aspect_ratio: f32, _: Option<f32>) -> Vec<Vertex> {
-        let s = 1f32 / aspect_ratio;
+    fn get_vertices() -> Vec<Vertex> {
         let r = ENEMY_RADIUS;
         let i = 1f32;
 
         vec![
             Vertex {
-                position: [-s * r, 0.0, 0.0],
+                position: [-r, 0.0, 0.0],
                 tex_coords: [t(0.0, i), 0.5],
             }, // A
             Vertex {
@@ -123,7 +115,7 @@ impl Sprite for Enemy {
                 tex_coords: [t(0.5, i), 1.0],
             }, // B
             Vertex {
-                position: [s * r, 0.0, 0.0],
+                position: [r, 0.0, 0.0],
                 tex_coords: [t(1.0, i), 0.5],
             }, // C
             Vertex {
@@ -137,15 +129,9 @@ impl Sprite for Enemy {
         &[0, 1, 2, 0, 2, 3]
     }
 
-    fn get_instance(&self, aspect_ratio: f32) -> Instance {
-        let s = 1f32 / aspect_ratio;
-
+    fn get_instance(&self) -> Instance {
         Instance {
-            instance_pos: [
-                s * self.game_object.coords.0,
-                self.game_object.coords.1,
-                0.0,
-            ],
+            instance_pos: [self.game_object.coords.0, self.game_object.coords.1, 0.0],
             theta: 0.0,
         }
     }
@@ -160,29 +146,22 @@ impl Sprite for Gate {
     /// [0,0]    [1,0]
     ///
     /// [0,1]    [1,1]
-    fn get_vertices(aspect_ratio: f32, rotation: Option<f32>) -> Vec<Vertex> {
-        let s = 1f32 / aspect_ratio;
+    fn get_vertices() -> Vec<Vertex> {
         let r = GATE_RADIUS;
-        let i = 2f32;
-        let theta = rotation.unwrap_or(0.0);
         let dt = 2f32 * PI / 3f32;
         let i = 2f32;
 
         vec![
             Vertex {
-                position: [s * r * theta.cos(), r * theta.sin(), 0.0],
+                position: [r * 0f32.cos(), r * 0f32.sin(), 0.0],
                 tex_coords: [t(0.5, i), 0.0],
             }, // A
             Vertex {
-                position: [s * r * (theta + dt).cos(), r * (theta + dt).sin(), 0.0],
+                position: [r * dt.cos(), r * dt.sin(), 0.0],
                 tex_coords: [t(0.0, i), 1.0],
             }, // B
             Vertex {
-                position: [
-                    s * r * (theta + 2f32 * dt).cos(),
-                    r * (theta + 2f32 * dt).sin(),
-                    0.0,
-                ],
+                position: [r * (2f32 * dt).cos(), r * (2f32 * dt).sin(), 0.0],
                 tex_coords: [t(1.0, i), 1.0],
             },
         ]
@@ -192,16 +171,11 @@ impl Sprite for Gate {
         &[0, 1, 2, /* pad */ 0]
     }
 
-    fn get_instance(&self, aspect_ratio: f32) -> Instance {
-        let s = 1f32 / aspect_ratio;
-
+    fn get_instance(&self) -> Instance {
         Instance {
-            instance_pos: [
-                s * self.game_object.coords.0,
-                self.game_object.coords.1,
-                0.0,
-            ],
+            instance_pos: [self.game_object.coords.0, self.game_object.coords.1, 0.0],
             theta: self.rotation,
+            // theta: 0.0,
         }
     }
 }

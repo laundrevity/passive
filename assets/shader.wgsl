@@ -1,5 +1,12 @@
 // Vertex shader
 
+struct Uniforms {
+    aspect_ratio: f32,
+};
+
+@group(1) @binding(0)
+var<uniform> u_uniforms: Uniforms;
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: vec2<f32>,
@@ -13,7 +20,7 @@ struct InstanceInput {
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
-}
+}   
 
 @vertex
 fn vs_main(
@@ -29,7 +36,20 @@ fn vs_main(
     );
 
     let rotated_position = rotation_matrix * model.position.xy;
-    out.clip_position = vec4<f32>(vec3<f32>(rotated_position, model.position.z) + instance.instance_pos, 1.0);
+    let aspect_ratio_corrected_position = vec2<f32>(
+        rotated_position.x / u_uniforms.aspect_ratio,
+        rotated_position.y
+    );
+
+    let scaled_instance_position = vec3<f32>(
+        instance.instance_pos.x / u_uniforms.aspect_ratio,
+        instance.instance_pos.y,
+        instance.instance_pos.z
+    );
+    
+    out.clip_position = vec4<f32>(vec3<f32>(aspect_ratio_corrected_position, model.position.z) + scaled_instance_position, 1.0);
+
+    // out.clip_position = vec4<f32>(model.position, 1.0);
 
     return out;
 }
