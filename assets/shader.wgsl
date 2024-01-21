@@ -30,10 +30,10 @@ fn vs_main(
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
 
-    let rotation_matrix = mat2x2<f32>(
+    let rotation_matrix = transpose(mat2x2<f32>(
         cos(instance.theta), -sin(instance.theta),
         sin(instance.theta),  cos(instance.theta)
-    );
+    ));
 
     let rotated_position = rotation_matrix * model.position.xy;
     let aspect_ratio_corrected_position = vec2<f32>(
