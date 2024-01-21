@@ -49,6 +49,7 @@ impl Gate {
             game_object: GameObject { coords },
             rotation: 0.0,
             spin_speed: 1.0,
+            // spin_speed: 0.0,
         }
     }
 }
@@ -164,7 +165,7 @@ impl Sprite for Gate {
             Vertex {
                 position: [r * (2f32 * dt).cos(), r * (2f32 * dt).sin(), 0.0],
                 tex_coords: [t(1.0, i), 1.0],
-            },
+            }, // C
         ]
     }
 

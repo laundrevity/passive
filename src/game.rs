@@ -135,7 +135,8 @@ impl Game {
             // PLAYER_RADIUS: 0.05
             // p=(0.19949819, 0.514558), q=(0.1995106, 0.16814788)
             let (dx, dy) = (gx - px, gy - py);
-            if dx * dx + dy * dy <= GATE_RADIUS * GATE_RADIUS {
+            let skip_check = true;
+            if dx * dx + dy * dy <= GATE_RADIUS * GATE_RADIUS || skip_check {
                 let theta = gate.rotation;
                 let s = 1f32 / self.aspect_ratio;
 
@@ -162,6 +163,10 @@ impl Game {
                         println!("player coords: ({}, {})", px, py);
                         println!("PLAYER_RADIUS: {}", PLAYER_RADIUS);
                         println!("p={:?}, q={:?}", p, q);
+                        println!("gate vertices: {:?}, {:?}, {:?}", v1, v2, v3);
+                        println!("gate rotation: {}", gate.rotation);
+                        println!("gate center: {:?}", gate.game_object.coords);
+                        return;
                     }
                 }
             }
@@ -223,6 +228,7 @@ impl Game {
 
         let x = rng.gen_range(0.0..1.0);
         let y = rng.gen_range(0.0..1.0);
+
         self.gates.push(Gate::new((x, y)));
 
         self.last_gate_time = self.timer;
