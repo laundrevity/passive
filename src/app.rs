@@ -33,9 +33,10 @@ pub struct App {
 
 impl App {
     pub async fn new(window: Window) -> Self {
-        let game = Game::new();
-
         let size = window.inner_size();
+        let aspect_ratio = size.width as f32 / size.height as f32;
+        let game = Game::new(aspect_ratio);
+
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {

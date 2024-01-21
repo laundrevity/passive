@@ -154,7 +154,8 @@ impl Sprite for Gate {
         vec![
             Vertex {
                 position: [r * 0f32.cos(), r * 0f32.sin(), 0.0],
-                tex_coords: [t(0.5, i), 0.0],
+                // height of an equilateral triangle with base 1 is sqrt(3)/2
+                tex_coords: [t(0.5, i), 1f32 - 3f32.sqrt() / 2f32],
             }, // A
             Vertex {
                 position: [r * dt.cos(), r * dt.sin(), 0.0],

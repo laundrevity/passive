@@ -1,10 +1,13 @@
+use crate::collision::check_segment_collision;
 use crate::constants::{
-    ENEMY_BUFFER, ENEMY_SPAWN_FREQ, ENEMY_SPEED, GATE_SPAWN_FREQ, PLAYER_SPEED,
+    ENEMY_BUFFER, ENEMY_SPAWN_FREQ, ENEMY_SPEED, GATE_RADIUS, GATE_SPAWN_FREQ, PLAYER_RADIUS,
+    PLAYER_SPEED,
 };
 use crate::game_object::{Enemy, Gate, Player};
 
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
+use std::f32::consts::PI;
 use std::f32::EPSILON;
 use winit::event::VirtualKeyCode;
 
@@ -20,6 +23,7 @@ pub struct Game {
     last_gate_time: f32,
     pub keys: HashSet<VirtualKeyCode>,
     enemies_per_wave: u32,
+    aspect_ratio: f32,
 
     pub player: Player,
     pub enemies: Vec<Enemy>,
@@ -27,7 +31,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new() -> Self {
+    pub fn new(aspect_ratio: f32) -> Self {
         Self {
             paused: false,
             timer: 0f32,
@@ -35,6 +39,8 @@ impl Game {
             last_gate_time: 0f32,
             keys: HashSet::new(),
             enemies_per_wave: 1,
+            aspect_ratio,
+
             player: Player::new(),
             enemies: Vec::new(),
             gates: Vec::new(),
@@ -96,6 +102,8 @@ impl Game {
                 // println!("gate rot: {}", gate.rotation);
             }
 
+            self.check_collisions();
+
             self.timer += dt;
 
             if self.timer > self.last_enemy_time + ENEMY_SPAWN_FREQ {
@@ -106,6 +114,56 @@ impl Game {
             if self.timer > self.last_gate_time + GATE_SPAWN_FREQ {
                 println!("spawn gate");
                 self.spawn_gate();
+            }
+        }
+    }
+
+    fn check_collisions(&mut self) {
+        // check player-gate edge collision
+        let (px, py) = self.player.game_object.coords;
+
+        for gate in &self.gates {
+            // cannot use get_vertices method as that ignores rotation
+            // we use rotation for rendering via instances
+            let (gx, gy) = gate.game_object.coords;
+
+            // TODO: debug why this is necessary
+            // if we remove this, then we get lots of false positives from distant gates with
+            // vertices with very similar x coords, e.g.
+            // x1=0.19950452 is between x_min=0.19949819 and x_max=0.1995106
+            // player coords: (-0.15033174, 0.33800787)
+            // PLAYER_RADIUS: 0.05
+            // p=(0.19949819, 0.514558), q=(0.1995106, 0.16814788)
+            let (dx, dy) = (gx - px, gy - py);
+            if dx * dx + dy * dy <= GATE_RADIUS * GATE_RADIUS {
+                let theta = gate.rotation;
+                let s = 1f32 / self.aspect_ratio;
+
+                let v1 = (
+                    s * (gx + GATE_RADIUS * theta.cos()),
+                    gy + GATE_RADIUS * theta.sin(),
+                );
+                let v2 = (
+                    s * (gx + GATE_RADIUS * (theta + 2f32 * PI / 3f32).cos()),
+                    gy + GATE_RADIUS * (theta + 2f32 * PI / 3f32).sin(),
+                );
+                let v3 = (
+                    s * (gx + GATE_RADIUS * (theta + 4f32 * PI / 3f32).cos()),
+                    gy + GATE_RADIUS * (theta + 4f32 * PI / 3f32).sin(),
+                );
+
+                let pairs = vec![(v1, v2), (v2, v3), (v3, v1)];
+
+                for (p, q) in pairs {
+                    if check_segment_collision(&(s * px, py), &p, &q, PLAYER_RADIUS) {
+                        println!("EXPLODE!");
+                        self.paused = !self.paused;
+
+                        println!("player coords: ({}, {})", px, py);
+                        println!("PLAYER_RADIUS: {}", PLAYER_RADIUS);
+                        println!("p={:?}, q={:?}", p, q);
+                    }
+                }
             }
         }
     }

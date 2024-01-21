@@ -1,4 +1,5 @@
 mod app;
+mod collision;
 mod constants;
 mod game;
 mod game_object;
