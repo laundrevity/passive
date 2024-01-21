@@ -1,6 +1,6 @@
 use crate::game::Game;
 use crate::game_object::{Enemy, Gate, Player};
-use crate::sprite::{Instance, Sprite, Vertex};
+use crate::sprite::{Instance, Sprite, Uniforms, Vertex};
 use crate::texture::Texture;
 
 use std::iter;
@@ -23,7 +23,10 @@ pub struct App {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     instance_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+
     bind_group: wgpu::BindGroup,
+    uniform_bind_group: wgpu::BindGroup,
 
     window: Window,
 }
@@ -149,10 +152,49 @@ impl App {
             source: wgpu::ShaderSource::Wgsl(include_str!("../assets/shader.wgsl").into()),
         });
 
+        // Create the uniform buffer
+        let aspect_ratio = size.width as f32 / size.height as f32;
+        println!("aspect_ratio: {}", aspect_ratio);
+
+        let uniforms = Uniforms {
+            aspect_ratio: size.width as f32 / size.height as f32, /* Your initial aspect ratio */
+        };
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer"),
+            contents: bytemuck::cast_slice(&[uniforms]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX, // or VERTEX | FRAGMENT if needed in both
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(
+                            std::mem::size_of::<Uniforms>() as u64
+                        ),
+                    },
+                    count: None,
+                }],
+                label: Some("uniform_bind_group_layout"),
+            });
+
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+            label: Some("uniform_bind_group"),
+        });
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -243,7 +285,10 @@ impl App {
             vertex_buffer,
             index_buffer,
             instance_buffer,
+            uniform_buffer,
+
             bind_group,
+            uniform_bind_group,
 
             window,
         }
@@ -328,10 +373,10 @@ impl App {
                 timestamp_writes: None,
             });
 
-            let aspect_ratio = self.size.width as f32 / self.size.height as f32;
             render_pass.set_pipeline(&self.render_pipeline);
 
             render_pass.set_bind_group(0, &self.bind_group, &[]);
+            render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
@@ -342,9 +387,9 @@ impl App {
             let mut base_vertex_offset = 0i32;
             let mut instance_count = 0u32;
 
-            let vertices = Player::get_vertices(aspect_ratio, None);
+            let vertices = Player::get_vertices();
             let indices = Player::get_indices();
-            let instance = self.game.player.get_instance(aspect_ratio);
+            let instance = self.game.player.get_instance();
 
             self.queue.write_buffer(
                 &self.vertex_buffer,
@@ -361,6 +406,13 @@ impl App {
                 instance_offset,
                 bytemuck::cast_slice(&vec![instance]),
             );
+            self.queue.write_buffer(
+                &self.uniform_buffer,
+                0,
+                bytemuck::cast_slice(&[Uniforms {
+                    aspect_ratio: self.size.width as f32 / self.size.height as f32,
+                }]),
+            );
 
             vertex_offset += std::mem::size_of::<Vertex>() as u64 * vertices.len() as u64;
             index_offset += std::mem::size_of::<u16>() as u64 * indices.len() as u64;
@@ -370,11 +422,11 @@ impl App {
             base_vertex_offset += vertices.len() as i32;
             instance_count += 1;
 
-            let vertices = Enemy::get_vertices(aspect_ratio, None);
+            let vertices = Enemy::get_vertices();
             let indices = Enemy::get_indices();
             let mut instances: Vec<Instance> = Vec::new();
             for enemy in &self.game.enemies {
-                instances.push(enemy.get_instance(aspect_ratio));
+                instances.push(enemy.get_instance());
             }
 
             self.queue.write_buffer(
@@ -409,14 +461,14 @@ impl App {
                 .game
                 .gates
                 .iter()
-                .flat_map(|gate| Gate::get_vertices(aspect_ratio, None))
+                .flat_map(|_| Gate::get_vertices())
                 .collect::<Vec<_>>();
             let indices = Gate::get_indices();
             let instances = self
                 .game
                 .gates
                 .iter()
-                .map(|gate| gate.get_instance(aspect_ratio))
+                .map(|gate| gate.get_instance())
                 .collect::<Vec<_>>();
 
             self.queue.write_buffer(

@@ -92,8 +92,8 @@ impl Game {
             for gate in self.gates.iter_mut() {
                 gate.rotation += dt * gate.spin_speed;
 
-                println!("dt={}, gate.spin_speed={}", dt, gate.spin_speed);
-                println!("gate rot: {}", gate.rotation);
+                // println!("dt={}, gate.spin_speed={}", dt, gate.spin_speed);
+                // println!("gate rot: {}", gate.rotation);
             }
 
             self.timer += dt;

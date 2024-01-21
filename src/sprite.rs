@@ -58,8 +58,14 @@ impl Instance {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Uniforms {
+    pub aspect_ratio: f32,
+}
+
 pub trait Sprite {
-    fn get_vertices(aspect_ratio: f32, rotation: Option<f32>) -> Vec<Vertex>;
+    fn get_vertices() -> Vec<Vertex>;
     fn get_indices() -> &'static [u16];
-    fn get_instance(&self, aspect_ratio: f32) -> Instance;
+    fn get_instance(&self) -> Instance;
 }
